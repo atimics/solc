@@ -1,0 +1,21 @@
+# Toolchain inputs are deliberately exact. Update only with ABI/source review.
+agave_release = "2.3.13"
+agave_source = "5466f459"
+platform_tools_release = "v1.48"
+platform_tools_commit = "5f531947f2e59971b2474d6c12980272d78fb7a7"
+rustc = "1.84.1-dev"
+llvm = "19.1.7"
+llvm_commit = "58a09e9726c323da6cd66bfa96fdf16632ef3973"
+sbpf_arch = "v2"
+
+[reference_artifact]
+path = "build/sbf/solc_reference.so"
+bytes = 8256
+sha256 = "5e93784bd29fa20e6266fd79c2f1235088fc20d9b0ed6e63267a7901b1d6a25f"
+
+[sdk_header_sha256]
+deserialize_h = "505785cdbc64d74372ab71791adcd2a8305fb298c201dbca979e0dfca291bb53"
+entrypoint_h = "2f99d265e925adf204041008ccfae84844a486bfe456f75ee03e2c04ee9374ab"
+cpi_h = "96c75b02b43a4aa7e90696e5812e9772174a5b1f80fa229874a4437b2ffb8384"
+pubkey_h = "e7490aecae4ccc3a5f1dab8f4c64907e97f3def927ffedd7eb61d760b50bfd2b"
+sbf_ld = "a7feb3b4a201045e44c3cce9f3c1087a2bf2fb6d1974aa84f55ed4a65b6f1380"

@@ -1,0 +1,12 @@
+/build*/
+target/
+*.o
+*.a
+*.so
+*.dylib
+*.profraw
+*.profdata
+*.plist
+.DS_Store
+__pycache__/
+*.pyc

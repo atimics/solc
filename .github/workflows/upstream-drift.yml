@@ -1,0 +1,17 @@
+name: Upstream wire drift
+
+on:
+  schedule:
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare official codec sources with reviewed baseline
+        run: scripts/check-upstream-drift.sh

@@ -1,0 +1,8 @@
+# sha256 crate version source-path
+bf06e3a1037fe341cac2efc8f789d57242c1a3bf77eec674ded97e2378217b90 solana-system-interface 1.0.0 src/instruction.rs
+79a548b93131470df20ebc5df5841068bfcdc036beec130f91d41d4ca817f1a2 solana-compute-budget-interface 2.2.2 src/lib.rs
+1c22e91fa024d79809b5040c1b8db8f5f4ad343d4acedc10fb3abff403450083 solana-address-lookup-table-interface 2.2.2 src/state.rs
+7f6f247b549e11d07c83059bad918bb2d0a78824867f961a10b239a9880a1a15 spl-token 8.0.0 src/instruction.rs
+7b0b7bacf9610e0cb7b6182b70b9aa4b036a227c916d7a166e93ae666b5b8cf5 spl-token 8.0.0 src/state.rs
+3089748e4767ec58ac61dc5466cc0291a1d3e135ddda9eaa2ae9089d0cc38d80 spl-token-2022 8.0.1 src/instruction.rs
+601fef43cde0ea62f800b916dc5cbfe971e905870ac61029246fef9e019caf22 spl-token-2022 8.0.1 src/extension/mod.rs

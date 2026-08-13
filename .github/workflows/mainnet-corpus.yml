@@ -1,0 +1,26 @@
+name: Mainnet read-only corpus
+
+on:
+  schedule:
+    - cron: "41 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build strict wire inspector
+        run: cargo build --locked -p solc-orchestrator --bin solc-wire
+      - name: Capture and verify finalized transactions
+        run: scripts/capture-mainnet-corpus.py build/mainnet-corpus --count 4
+      - name: Preserve evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: mainnet-corpus
+          path: build/mainnet-corpus
+          if-no-files-found: error

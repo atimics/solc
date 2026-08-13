@@ -1,0 +1,58 @@
+name: Devnet evidence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-and-execute:
+    runs-on: ubuntu-latest
+    env:
+      PAYER_JSON: ${{ secrets.SOLC_DEVNET_PAYER_JSON }}
+      PROGRAM_JSON: ${{ secrets.SOLC_DEVNET_PROGRAM_KEYPAIR_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report missing deployment secrets
+        if: env.PAYER_JSON == '' || env.PROGRAM_JSON == ''
+        run: echo "No devnet write attempted because the keypair secrets are absent."
+      - uses: dtolnay/rust-toolchain@stable
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+      - name: Cache exact platform tools
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/solana/v1.48
+          key: solana-platform-tools-v1.48-linux-x86-64
+      - name: Install exact Agave release
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.13/install)"
+      - name: Expose Agave binaries
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install exact platform compiler
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        run: >-
+          "$HOME/.local/share/solana/install/active_release/bin/platform-tools-sdk/sbf/scripts/install.sh"
+      - name: Materialize ephemeral keypairs
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        run: |
+          umask 077
+          printf '%s' "$PAYER_JSON" > "$RUNNER_TEMP/payer.json"
+          printf '%s' "$PROGRAM_JSON" > "$RUNNER_TEMP/program.json"
+      - name: Deploy, simulate, send, and record evidence
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        env:
+          SOLC_DEVNET_ENABLE: "1"
+          SOLC_DEVNET_PAYER: ${{ runner.temp }}/payer.json
+          SOLC_DEVNET_PROGRAM_KEYPAIR: ${{ runner.temp }}/program.json
+          SOLC_DEVNET_EVIDENCE: ${{ runner.temp }}/devnet-evidence.json
+        run: scripts/devnet-evidence.sh
+      - name: Preserve evidence
+        if: env.PAYER_JSON != '' && env.PROGRAM_JSON != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: devnet-evidence
+          path: ${{ runner.temp }}/devnet-evidence.json
+          if-no-files-found: error

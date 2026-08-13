@@ -1,0 +1,9 @@
+# Reviewed sibling sources on 2026-08-13. Paths are repository-relative to solc.
+2743fa953a46cc47a314bee272719ed58826dd9a5c582f8fa572c1f09a93c2cc  ../signal/tools/packnft/msg.c
+a49ad94b94c87eb3d48487797a3ffb1948d075ba29a33a8a3faf75a8e2562523  ../signal/tools/packnft/core_ix.c
+370abbe72a012d97f2ede1a410a9df22b0404dd65a38350b2e5305cbe175b1a3  ../signal/tools/packnft/txn.c
+aa3e0828e073ac1cb7630654c764ecd9e52681fb042f5b3a8afebbde99267250  ../rati/programs/rati-bridge/onchain-c/src/rati_bridge.c
+3a3af05c89c3cc034bcf1cbc307df64f62c839860bb2c8584669333258274e4f  ../rati/programs/rati-bridge/onchain/src/lib.rs
+566a9a1dc24e2e165539302e1860a497066cb5687d3484a4b02cdcf35d84bb56  ../trebuchet/CLI_UX_GAP_ANALYSIS.md
+89736ee7cf2f081217c9c4fed665e6f77e0f42821b0d908d4e9a3d7c1031be26  ../trebuchet/packages/cli/src/cli.js
+fea9d327c9bb021207f50339c94c9ec84280e5ed85b4193203b20554875efb41  ../trebuchet/walletHelpers.js

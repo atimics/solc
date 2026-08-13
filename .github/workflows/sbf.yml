@@ -1,0 +1,49 @@
+name: SBF artifact
+
+on:
+  push:
+    paths:
+      - ".github/workflows/sbf.yml"
+      - "compat/sbf-toolchain.toml"
+      - "include/solc/sbf.h"
+      - "include/solc/sbf_sdk.h"
+      - "include/solc/wire.h"
+      - "programs/reference-entrypoint/**"
+      - "scripts/build-reference-sbf.sh"
+      - "scripts/check-sbf-toolchain.sh"
+      - "src/sbf.c"
+  pull_request:
+    paths:
+      - ".github/workflows/sbf.yml"
+      - "compat/sbf-toolchain.toml"
+      - "include/solc/sbf.h"
+      - "include/solc/sbf_sdk.h"
+      - "include/solc/wire.h"
+      - "programs/reference-entrypoint/**"
+      - "scripts/build-reference-sbf.sh"
+      - "scripts/check-sbf-toolchain.sh"
+      - "src/sbf.c"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache exact platform tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/solana/v1.48
+          key: solana-platform-tools-v1.48-linux-x86-64
+      - name: Install exact Agave release
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.13/install)"
+      - name: Expose Agave binaries
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install exact platform compiler
+        run: >-
+          "$HOME/.local/share/solana/install/active_release/bin/platform-tools-sdk/sbf/scripts/install.sh"
+      - name: Rebuild and verify reference artifact
+        run: scripts/check-sbf-toolchain.sh

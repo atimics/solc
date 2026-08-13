@@ -1,0 +1,11 @@
+[package]
+name = "solc-upstream-oracle"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+solana-transaction = { version = "=4.2.0", features = ["verify", "wincode"] }
+wincode = { version = "=0.6.0", features = ["alloc"] }
+
+[workspace]

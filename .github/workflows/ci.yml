@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native (${{ matrix.os }}, ${{ matrix.cc }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+          - os: ubuntu-latest
+            cc: clang
+          - os: macos-latest
+            cc: clang
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.cc }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+      - name: Configure C
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+      - name: Build C
+        run: cmake --build build --parallel
+      - name: Test C
+        run: ctest --test-dir build --output-on-failure
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Test Rust and C ABI
+        run: cargo test --workspace --all-targets
+      - name: Test Trebuchet process adapter
+        run: |
+          cargo build --locked -p solc-orchestrator --bin solc-bridge
+          node migrations/trebuchet/test-adapter.mjs \
+            target/debug/solc-bridge tests/vectors/legacy.hex
+      - name: Lint Rust
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Check canonical vectors
+        run: cargo run --quiet -p solc-orchestrator --bin solc-wire -- check-vectors
+
+  sanitizers:
+    name: Address and undefined behavior sanitizers
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >-
+          cmake -S . -B build-sanitize
+          -DCMAKE_BUILD_TYPE=Debug
+          -DSOLC_ENABLE_SANITIZERS=ON
+      - name: Build
+        run: cmake --build build-sanitize --parallel
+      - name: Test
+        run: ctest --test-dir build-sanitize --output-on-failure
+
+  upstream-oracle:
+    name: Official Rust SDK vector oracle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify canonical vectors with exact-pinned Anza crates
+        run: >-
+          cargo run --locked
+          --manifest-path tests/upstream-oracle/Cargo.toml
+      - name: Verify program vectors with exact-pinned official crates
+        run: >-
+          cargo run --locked
+          --manifest-path tests/program-oracle/Cargo.toml
+      - name: Verify reviewed program source files
+        run: scripts/check-program-source.sh
+      - name: Verify migration fixtures and available source provenance
+        run: scripts/check-migration-fixtures.sh
+
+  fuzz:
+    name: Bounded decoder fuzz
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: >-
+          cmake -S . -B build-fuzz
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DSOLC_BUILD_FUZZER=ON
+          -DBUILD_TESTING=OFF
+      - name: Build
+        run: cmake --build build-fuzz --parallel
+      - name: Materialize canonical corpus
+        run: scripts/materialize-fuzz-corpus.sh build-fuzz-corpus
+      - name: Materialize SBF corpus
+        run: scripts/materialize-sbf-fuzz-corpus.sh build-sbf-fuzz-corpus
+      - name: Materialize program corpus
+        run: scripts/materialize-program-fuzz-corpus.sh build-program-fuzz-corpus
+      - name: Fuzz transaction decoder
+        run: >-
+          ./build-fuzz/solc_wire_fuzz build-fuzz-corpus
+          -max_total_time=10 -timeout=2
+      - name: Fuzz canonical text decoders
+        run: >-
+          ./build-fuzz/solc_encoding_fuzz tests/fuzz/corpus/encoding
+          -max_total_time=10 -timeout=2
+      - name: Fuzz SBF entrypoint decoder
+        run: >-
+          ./build-fuzz/solc_sbf_fuzz build-sbf-fuzz-corpus
+          -max_total_time=10 -timeout=2
+      - name: Fuzz program codecs
+        run: >-
+          ./build-fuzz/solc_program_fuzz build-program-fuzz-corpus
+          -max_total_time=10 -timeout=2

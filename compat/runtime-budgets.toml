@@ -1,0 +1,12 @@
+# Intentional compatibility pins and regression ceilings. Raise a ceiling only
+# after reviewing the generated artifact and the corresponding runtime evidence.
+
+[pins]
+agave_release = "2.3.13"
+mollusk = "0.3.0"
+program_id = "US517G5965aydkZ46HS38QLi7UQiSojurfbQfKCELFx"
+
+[budgets]
+artifact_max_bytes = 9216
+mollusk_max_compute_units = 80
+agave_max_compute_units = 80

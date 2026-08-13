@@ -1,0 +1,63 @@
+name: Runtime differential
+
+on:
+  push:
+    paths:
+      - ".github/workflows/runtime.yml"
+      - "compat/runtime-budgets.toml"
+      - "compat/sbf-toolchain.toml"
+      - "include/solc/sbf.h"
+      - "include/solc/sbf_sdk.h"
+      - "include/solc/wire.h"
+      - "programs/reference-entrypoint/**"
+      - "scripts/build-reference-sbf.sh"
+      - "scripts/check-runtime-differential.sh"
+      - "scripts/check-sbf-toolchain.sh"
+      - "scripts/compare-runtime-evidence.py"
+      - "src/sbf.c"
+      - "tests/runtime-oracle/**"
+  pull_request:
+    paths:
+      - ".github/workflows/runtime.yml"
+      - "compat/runtime-budgets.toml"
+      - "compat/sbf-toolchain.toml"
+      - "include/solc/sbf.h"
+      - "include/solc/sbf_sdk.h"
+      - "include/solc/wire.h"
+      - "programs/reference-entrypoint/**"
+      - "scripts/build-reference-sbf.sh"
+      - "scripts/check-runtime-differential.sh"
+      - "scripts/check-sbf-toolchain.sh"
+      - "scripts/compare-runtime-evidence.py"
+      - "src/sbf.c"
+      - "tests/runtime-oracle/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache exact platform tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/solana/v1.48
+          key: solana-platform-tools-v1.48-linux-x86-64
+      - name: Cache runtime oracle
+        uses: actions/cache@v4
+        with:
+          path: tests/runtime-oracle/target
+          key: runtime-oracle-${{ runner.os }}-${{ hashFiles('tests/runtime-oracle/Cargo.lock') }}
+      - name: Install exact Agave release
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.13/install)"
+      - name: Expose Agave binaries
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install exact platform compiler
+        run: >-
+          "$HOME/.local/share/solana/install/active_release/bin/platform-tools-sdk/sbf/scripts/install.sh"
+      - name: Compare Mollusk and local Agave execution
+        run: scripts/check-runtime-differential.sh
