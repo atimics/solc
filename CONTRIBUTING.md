@@ -6,6 +6,17 @@ Run the complete local gate:
 make check
 ```
 
+Changes to deterministic C execution boundaries should also run:
+
+```sh
+make check-full
+```
+
+The individual policy, determinism, sanitizer, coverage, analyzer, and fuzz
+lanes are documented in `docs/CI.md`. Do not suppress a kernel policy finding
+inside source; update `ci/kernel-policy.toml` with an explicit reviewable
+exception only when the dependency is part of the deterministic contract.
+
 Protocol changes must include:
 
 - the primary upstream source or SIMD that motivated the change;

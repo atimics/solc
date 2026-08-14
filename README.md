@@ -99,15 +99,17 @@ docs/RUNTIME_DIFFERENTIAL.md       M4 execution and network evidence contract
 docs/MIGRATIONS.md                 M5 Signal/RATi/Trebuchet parity boundaries
 docs/ARCHITECTURE.md              Trust boundaries and extension rules
 docs/ARCHAEOLOGY.md               What survived from Signal/RATi/Trebuchet
+docs/CI.md                        Local/hosted deterministic-core test contract
 ```
 
 ## CI contract
 
 Every push and pull request builds and tests C and Rust on Linux and macOS,
-runs strict compiler warnings, Clippy, formatting, sanitizers, the canonical
-vector gate, and a bounded fuzz run. A scheduled job hashes the small set of
-official Anza source files that define the format; any change fails visibly and
-requires a compatibility review.
+runs a machine-readable deterministic-core policy, GCC/Clang transcript
+comparison, strict compiler warnings, Clippy, formatting, sanitizers, exact
+oracles, the canonical vector gate, and bounded fuzzing. Scheduled checks add
+coverage, ThreadSanitizer, GCC analysis, extended fuzzing, and upstream drift.
+See [docs/CI.md](docs/CI.md) for the local commands and enforced boundaries.
 
 See [ROADMAP.md](ROADMAP.md) for the path from transaction wire compatibility to
 a broader C SVM reference.
