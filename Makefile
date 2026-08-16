@@ -1,4 +1,4 @@
-.PHONY: all build test check check-fast check-full rust fmt policy determinism \
+.PHONY: all build test check check-fast check-full rust fmt policy site-check determinism \
 	sanitize thread-sanitize coverage analyze fuzz-smoke sbf-check runtime-check \
 	migration-check clean
 
@@ -23,6 +23,9 @@ policy: build
 	python3 scripts/check-kernel-policy.py --policy ci/kernel-policy.toml --clang "$${CC:-clang}"
 	python3 scripts/check-kernel-policy.py --policy ci/kernel-policy.toml --library "$(BUILD_DIR)/libsolc_wire.a"
 	python3 scripts/check-kernel-policy.py --self-test
+
+site-check:
+	python3 scripts/check-site.py site
 
 determinism:
 	python3 scripts/check-determinism.py
@@ -56,7 +59,7 @@ runtime-check:
 migration-check:
 	scripts/check-migration-fixtures.sh
 
-check-fast: policy test fmt rust migration-check
+check-fast: policy site-check test fmt rust migration-check
 	cargo clippy --locked --workspace --all-targets -- -D warnings
 	cargo run --locked --quiet -p solc-orchestrator --bin solc-wire -- check-vectors
 

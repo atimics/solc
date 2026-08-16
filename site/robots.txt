@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /solc/
+
+Sitemap: https://atimics.github.io/solc/sitemap.xml

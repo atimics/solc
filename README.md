@@ -1,7 +1,8 @@
 # solc-wire
 
-An executable, dependency-free C reference for Solana transaction wire formats,
-with a small Rust orchestration layer and CI designed to expose upstream drift.
+A deterministic Solana transaction compiler and dependency-free C reference for
+wire formats, with a small Rust orchestration layer and CI designed to expose
+upstream drift.
 
 The implemented foundation provides strict decode, validation, and byte-exact
 encode for:
@@ -17,6 +18,12 @@ network-free Rust JSON-RPC adapters, and a checked native SBF entrypoint/CPI
 foundation.
 It also owns strict System, Compute Budget, SPL Token/Token-2022 base, and
 Address Lookup Table account codecs, plus a checked legacy transaction builder.
+
+The current C builder compiles explicit instructions and account requirements
+into a canonical legacy transaction model. The next product layer exposes that
+foundation as an ergonomic compile, external-sign, and finalize workflow. See
+[PRD.md](PRD.md) for the product contract and [ENG.md](ENG.md) for its delivery
+sequence.
 
 This is intentionally not another application built on a large Solana SDK. The
 C library owns the format and invariants. Rust provides a safe CLI boundary and
@@ -66,6 +73,9 @@ or resolve lookup-table accounts.
 ## Repository map
 
 ```text
+PRD.md                            Product thesis, users, scope, and acceptance
+ENG.md                            Transaction compiler architecture and delivery
+site/                             Dependency-free GitHub Pages source
 include/solc/wire.h               Stable C ABI and wire model
 include/solc/encoding.h           Canonical base58/base64 ABI
 include/solc/crypto.h             SHA-256 and crypto-provider ABI
@@ -98,6 +108,8 @@ docs/PROGRAM_FORMATS.md            M3 core program byte contract
 docs/RUNTIME_DIFFERENTIAL.md       M4 execution and network evidence contract
 docs/MIGRATIONS.md                 M5 Signal/RATi/Trebuchet parity boundaries
 docs/ARCHITECTURE.md              Trust boundaries and extension rules
+docs/MICROVALIDATORS.md           Composable validation and authority layers
+docs/PUBLISHING.md                Package channels and release gates
 docs/ARCHAEOLOGY.md               What survived from Signal/RATi/Trebuchet
 docs/CI.md                        Local/hosted deterministic-core test contract
 ```

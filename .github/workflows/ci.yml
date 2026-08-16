@@ -47,6 +47,8 @@ jobs:
           bash -n scripts/*.sh
           python3 -m py_compile scripts/*.py
           git diff --check
+      - name: Check GitHub Pages site
+        run: python3 scripts/check-site.py site
 
   native:
     name: C (${{ matrix.os }}, ${{ matrix.cc }})
