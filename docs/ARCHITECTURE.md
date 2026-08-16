@@ -78,6 +78,24 @@ bytes back through the C sanitizer.
 
 See [ENCODING_CRYPTO.md](ENCODING_CRYPTO.md) for the executable contract.
 
+## Microvalidator layers
+
+The transaction codec is one deterministic validation kernel, not a miniature
+network validator. Future state or execution work follows a three-way placement
+rule: reproducible decisions over explicit inputs belong in a deterministic
+kernel; acquisition of current context belongs in Rust orchestration; and
+selection of the network's accepted history belongs in an external runtime or
+consensus system.
+
+This keeps lookup resolution, account predicates, and blockhash-lifetime rules
+testable without giving the C core network authority. It also prevents Rust
+orchestration from becoming a second handwritten protocol implementation.
+Full SVM execution, if implemented locally, is a separate deterministic kernel;
+fork choice and consensus remain an external agreement plane.
+
+See [MICROVALIDATORS.md](MICROVALIDATORS.md) for the claim model, responsibility
+matrix, package boundaries, and supported research hypotheses.
+
 ## Remaining non-goals
 
 - private-key loading and Ed25519 signing;
@@ -88,4 +106,6 @@ See [ENCODING_CRYPTO.md](ENCODING_CRYPTO.md) for the executable contract.
   isolated test oracles);
 - claiming that SDK-master features are active on every cluster.
 
-Those belong in explicit layers above the transaction wire core.
+Those belong in the explicit state, execution, control, or agreement layers
+described in [MICROVALIDATORS.md](MICROVALIDATORS.md), not in the transaction
+wire core.

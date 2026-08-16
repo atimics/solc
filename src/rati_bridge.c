@@ -66,13 +66,14 @@ solc_status solc_rati_bridge_instruction_decode(
             return fail(error, SOLC_E_TRUNCATED, input_len);
         }
         event_len = read_u16(input + 33u);
-        if ((size_t)event_len > SIZE_MAX - 35u - SOLC_RATI_ED25519_SIGNATURE_BYTES) {
-            return fail(error, SOLC_E_OVERFLOW, 33u);
-        }
-        exact_len = 35u + (size_t)event_len + SOLC_RATI_ED25519_SIGNATURE_BYTES;
-        if (input_len < exact_len) {
+        if ((size_t)event_len > input_len - 35u) {
             return fail(error, SOLC_E_TRUNCATED, input_len);
         }
+        exact_len = 35u + (size_t)event_len;
+        if (SOLC_RATI_ED25519_SIGNATURE_BYTES > input_len - exact_len) {
+            return fail(error, SOLC_E_TRUNCATED, input_len);
+        }
+        exact_len += SOLC_RATI_ED25519_SIGNATURE_BYTES;
         if (input_len != exact_len) {
             return fail(error, SOLC_E_TRAILING_BYTES, exact_len);
         }

@@ -1,0 +1,35 @@
+schema = 1
+roots = ["src", "include/solc"]
+source_globs = ["**/*.c", "**/*.h"]
+translation_unit_globs = ["src/*.c"]
+public_api_file = "compat/public-api.symbols"
+
+allowed_system_headers = [
+  "limits.h",
+  "stdbool.h",
+  "stddef.h",
+  "stdint.h",
+  "string.h",
+  "sol/cpi.h",
+]
+
+allowed_project_include_prefixes = ["solc/"]
+
+forbidden_types = ["float", "double", "time_t", "clock_t", "FILE"]
+forbidden_tokens = ["_Thread_local", "thread_local", "_Atomic", "__asm__", "__asm", "asm"]
+forbidden_macros = ["__DATE__", "__TIME__", "__TIMESTAMP__"]
+forbidden_calls = [
+  "malloc", "calloc", "realloc", "free", "aligned_alloc",
+  "time", "clock", "clock_gettime", "gettimeofday", "timespec_get",
+  "rand", "srand", "random", "srandom", "getrandom", "arc4random",
+  "getenv", "setenv", "putenv", "setlocale", "localeconv",
+  "open", "fopen", "freopen", "read", "write", "stat", "fstat",
+  "socket", "connect", "accept", "send", "recv",
+  "pthread_create", "thrd_create",
+]
+
+allowed_undefined_symbols = [
+  "memcpy", "memmove", "memset", "memcmp", "memchr", "strchr", "bzero",
+  "__memcpy_chk", "__memmove_chk", "__memset_chk",
+  "__stack_chk_fail", "__stack_chk_guard", "__chkstk_darwin",
+]

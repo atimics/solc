@@ -204,6 +204,22 @@ static void test_short_u16(void) {
     }
 }
 
+static void test_short_u16_exhaustive(void) {
+    uint32_t candidate;
+    for (candidate = 0u; candidate <= UINT16_MAX; ++candidate) {
+        uint8_t encoded[3] = {0u, 0u, 0u};
+        uint16_t decoded = 0u;
+        size_t encoded_len = 0u;
+        size_t consumed = 0u;
+        size_t expected_len = candidate < 128u ? 1u : candidate < 16384u ? 2u : 3u;
+        CHECK(solc_short_u16_encode((uint16_t)candidate, encoded, &encoded_len) == SOLC_OK);
+        CHECK(encoded_len == expected_len);
+        CHECK(solc_short_u16_decode(encoded, encoded_len, &decoded, &consumed) == SOLC_OK);
+        CHECK(decoded == (uint16_t)candidate);
+        CHECK(consumed == encoded_len);
+    }
+}
+
 static void test_truncation_and_canonical_mutations(solc_message_version version) {
     fixture f;
     uint8_t encoded[4096];
@@ -353,6 +369,7 @@ static void test_size_boundaries(void) {
 
 int main(void) {
     test_short_u16();
+    test_short_u16_exhaustive();
     assert_roundtrip(SOLC_MESSAGE_LEGACY, 174u);
     assert_roundtrip(SOLC_MESSAGE_V0, 212u);
     assert_roundtrip(SOLC_MESSAGE_V1, 189u);

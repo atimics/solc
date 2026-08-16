@@ -2,14 +2,56 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+
 jobs:
+  policy:
+    name: Deterministic core policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check policy implementation
+        run: python3 scripts/check-kernel-policy.py --self-test
+      - name: Check source and Clang AST policy
+        run: >-
+          python3 scripts/check-kernel-policy.py
+          --policy ci/kernel-policy.toml
+          --clang clang
+      - name: Build policy artifact
+        env:
+          CC: clang
+        run: |
+          cmake -S . -B build-policy -G Ninja -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-policy --parallel
+      - name: Check link boundary and public ABI
+        run: >-
+          python3 scripts/check-kernel-policy.py
+          --policy ci/kernel-policy.toml
+          --library build-policy/libsolc_wire.a
+      - name: Check repository scripts
+        run: |
+          bash -n scripts/*.sh
+          python3 -m py_compile scripts/*.py
+          git diff --check
+      - name: Check GitHub Pages site
+        run: python3 scripts/check-site.py site
+
   native:
-    name: Native (${{ matrix.os }}, ${{ matrix.cc }})
+    name: C (${{ matrix.os }}, ${{ matrix.cc }})
     strategy:
       fail-fast: false
       matrix:
@@ -21,103 +63,112 @@ jobs:
           - os: macos-latest
             cc: clang
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     env:
       CC: ${{ matrix.cc }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --parallel 4
+
+  rust:
+    name: Rust orchestrator and cross-language ABI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
-      - name: Configure C
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-      - name: Build C
-        run: cmake --build build --parallel
-      - name: Test C
-        run: ctest --test-dir build --output-on-failure
-      - name: Check Rust formatting
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: rust-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'crates/**/Cargo.toml') }}
+      - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Test Rust and C ABI
-        run: cargo test --workspace --all-targets
+        run: cargo test --locked --workspace --all-targets
       - name: Test Trebuchet process adapter
         run: |
           cargo build --locked -p solc-orchestrator --bin solc-bridge
           node migrations/trebuchet/test-adapter.mjs \
             target/debug/solc-bridge tests/vectors/legacy.hex
-      - name: Lint Rust
-        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Lint
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: Check canonical vectors
-        run: cargo run --quiet -p solc-orchestrator --bin solc-wire -- check-vectors
+        run: >-
+          cargo run --locked --quiet
+          -p solc-orchestrator --bin solc-wire -- check-vectors
 
   sanitizers:
     name: Address and undefined behavior sanitizers
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CC: clang
+      ASAN_OPTIONS: detect_stack_use_after_return=1:strict_string_checks=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - uses: actions/checkout@v4
       - name: Configure
         run: >-
-          cmake -S . -B build-sanitize
+          cmake -S . -B build-sanitize -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
           -DSOLC_ENABLE_SANITIZERS=ON
       - name: Build
         run: cmake --build build-sanitize --parallel
       - name: Test
-        run: ctest --test-dir build-sanitize --output-on-failure
+        run: ctest --test-dir build-sanitize --output-on-failure --parallel 2
+
+  determinism:
+    name: Cross-compiler determinism
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare GCC/Clang O0/O3 transcripts
+        run: python3 scripts/check-determinism.py
 
   upstream-oracle:
-    name: Official Rust SDK vector oracle
+    name: Exact-pinned official oracles
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Verify canonical vectors with exact-pinned Anza crates
-        run: >-
-          cargo run --locked
-          --manifest-path tests/upstream-oracle/Cargo.toml
-      - name: Verify program vectors with exact-pinned official crates
-        run: >-
-          cargo run --locked
-          --manifest-path tests/program-oracle/Cargo.toml
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            tests/upstream-oracle/target
+            tests/program-oracle/target
+          key: oracles-${{ runner.os }}-${{ hashFiles('tests/upstream-oracle/Cargo.lock', 'tests/program-oracle/Cargo.lock') }}
+      - name: Verify canonical vectors with official transaction crates
+        run: cargo run --locked --manifest-path tests/upstream-oracle/Cargo.toml
+      - name: Verify program vectors with official program crates
+        run: cargo run --locked --manifest-path tests/program-oracle/Cargo.toml
       - name: Verify reviewed program source files
         run: scripts/check-program-source.sh
       - name: Verify migration fixtures and available source provenance
         run: scripts/check-migration-fixtures.sh
 
-  fuzz:
-    name: Bounded decoder fuzz
+  fuzz-smoke:
+    name: Bounded fuzz smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       CC: clang
     steps:
       - uses: actions/checkout@v4
-      - name: Configure
-        run: >-
-          cmake -S . -B build-fuzz
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo
-          -DSOLC_BUILD_FUZZER=ON
-          -DBUILD_TESTING=OFF
-      - name: Build
-        run: cmake --build build-fuzz --parallel
-      - name: Materialize canonical corpus
-        run: scripts/materialize-fuzz-corpus.sh build-fuzz-corpus
-      - name: Materialize SBF corpus
-        run: scripts/materialize-sbf-fuzz-corpus.sh build-sbf-fuzz-corpus
-      - name: Materialize program corpus
-        run: scripts/materialize-program-fuzz-corpus.sh build-program-fuzz-corpus
-      - name: Fuzz transaction decoder
-        run: >-
-          ./build-fuzz/solc_wire_fuzz build-fuzz-corpus
-          -max_total_time=10 -timeout=2
-      - name: Fuzz canonical text decoders
-        run: >-
-          ./build-fuzz/solc_encoding_fuzz tests/fuzz/corpus/encoding
-          -max_total_time=10 -timeout=2
-      - name: Fuzz SBF entrypoint decoder
-        run: >-
-          ./build-fuzz/solc_sbf_fuzz build-sbf-fuzz-corpus
-          -max_total_time=10 -timeout=2
-      - name: Fuzz program codecs
-        run: >-
-          ./build-fuzz/solc_program_fuzz build-program-fuzz-corpus
-          -max_total_time=10 -timeout=2
+      - name: Fuzz all deterministic byte boundaries
+        run: scripts/run-fuzz.sh 10 build-fuzz

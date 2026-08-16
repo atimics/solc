@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="A deterministic compiler for canonical Solana transaction bytes, exact signing payloads, and strict validation."
+    >
+    <meta name="theme-color" content="#0b0d12">
+    <meta property="og:title" content="solc-wire — Solana transaction compiler">
+    <meta
+      property="og:description"
+      content="Describe the transaction. Get the exact bytes to sign and send."
+    >
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://atimics.github.io/solc/">
+    <link rel="canonical" href="https://atimics.github.io/solc/">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+    <title>solc-wire — Solana transaction compiler</title>
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="#top" aria-label="solc-wire home">
+          <span class="brand-mark" aria-hidden="true">01</span>
+          <span>solc<span class="brand-slash">//</span>wire</span>
+        </a>
+
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="site-nav"
+        >
+          <span class="sr-only">Toggle navigation</span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </button>
+
+        <nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+          <a href="#compiler">Compiler</a>
+          <a href="#foundation">Foundation</a>
+          <a href="#roadmap">Roadmap</a>
+          <a href="#packages">Packages</a>
+          <a
+            class="nav-github"
+            href="https://github.com/atimics/solc"
+          >GitHub <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section id="top" class="hero shell">
+        <div class="hero-copy reveal">
+          <p class="eyebrow">
+            <span class="status-dot" aria-hidden="true"></span>
+            Deterministic Solana transaction construction
+          </p>
+          <h1>Describe the transaction.<br><em>Get the exact bytes.</em></h1>
+          <p class="hero-deck">
+            A small, dependency-free C kernel for compiling canonical Solana
+            transaction wire bytes, extracting exact signing payloads, and
+            rejecting ambiguity before it reaches a signer.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#compiler">
+              See the compiler model
+              <span aria-hidden="true">↓</span>
+            </a>
+            <a
+              class="button button-secondary"
+              href="https://github.com/atimics/solc"
+            >Browse the source <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="hero-note">
+            Legacy construction is implemented in C today. The ergonomic
+            compile/sign/finalize product surface is the next release layer.
+          </p>
+        </div>
+
+        <div class="hero-console reveal" aria-label="Transaction compilation example">
+          <div class="console-bar">
+            <div class="console-lights" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <span>transaction.plan</span>
+            <span class="console-mode">offline</span>
+          </div>
+          <div class="console-body">
+            <div class="plan-line">
+              <span class="line-number">01</span>
+              <span><b>payer</b> <i>7JFr…xs9</i></span>
+            </div>
+            <div class="plan-line">
+              <span class="line-number">02</span>
+              <span><b>lifetime</b> <i>9CYW…jQ8</i></span>
+            </div>
+            <div class="plan-line">
+              <span class="line-number">03</span>
+              <span><b>instruction</b> System.Transfer</span>
+            </div>
+            <div class="plan-line indent">
+              <span class="line-number">04</span>
+              <span><b>to</b> <i>4ZbL…Rk2</i></span>
+            </div>
+            <div class="plan-line indent">
+              <span class="line-number">05</span>
+              <span><b>lamports</b> 1_000_000</span>
+            </div>
+
+            <div class="compile-rule" aria-hidden="true">
+              <span>compile</span><span></span><span>canonical</span>
+            </div>
+
+            <div class="output-row">
+              <span>account privileges</span>
+              <strong><span class="check">✓</span> merged</strong>
+            </div>
+            <div class="output-row">
+              <span>signer order</span>
+              <strong><span class="check">✓</span> fixed</strong>
+            </div>
+            <div class="output-row">
+              <span>message bytes</span>
+              <strong><span class="check">✓</span> exact</strong>
+            </div>
+            <div class="hex-stream" aria-label="Illustrative binary output">
+              <span>01 00 01 03</span> 9f 2a 77 0c 41 b8 d2 6e
+              00 00 00 00 02 00 02 0c 02 40 42 0f 00
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="proof-strip" aria-label="Core properties">
+        <div class="shell proof-grid">
+          <div>
+            <strong>0</strong>
+            <span>kernel allocations</span>
+          </div>
+          <div>
+            <strong>3</strong>
+            <span>wire formats decoded</span>
+          </div>
+          <div>
+            <strong>1:1</strong>
+            <span>accepted byte round-trip</span>
+          </div>
+          <div>
+            <strong>C11</strong>
+            <span>portable core</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="compiler" class="section shell">
+        <div class="section-heading reveal">
+          <p class="kicker">The product</p>
+          <h2>A transaction compiler,<br>not another SDK.</h2>
+          <p>
+            Applications should describe accounts, privileges, and
+            instructions. They should not hand-maintain compiled indices,
+            signature ordering, or byte offsets.
+          </p>
+        </div>
+
+        <div class="compile-flow">
+          <article class="flow-card reveal">
+            <span class="flow-number">01</span>
+            <div>
+              <h3>Describe</h3>
+              <p>
+                Supply a payer, lifetime value, instruction data, and account
+                requirements. No network or private key is required.
+              </p>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+          </article>
+          <article class="flow-card reveal">
+            <span class="flow-number">02</span>
+            <div>
+              <h3>Compile</h3>
+              <p>
+                Merge privileges, order signers, compile account indices, and
+                encode one canonical transaction model.
+              </p>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+          </article>
+          <article class="flow-card reveal">
+            <span class="flow-number">03</span>
+            <div>
+              <h3>Sign &amp; finalize</h3>
+              <p>
+                Export exact message bytes to a wallet or HSM, attach the
+                returned signatures, verify, then emit binary or base64.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section code-section">
+        <div class="shell code-layout">
+          <div class="code-copy reveal">
+            <p class="kicker">Implemented foundation</p>
+            <h2>One authoritative model from accounts to wire.</h2>
+            <p>
+              The current C builder accepts ergonomic account metadata,
+              promotes duplicate privileges, fixes canonical account order,
+              and emits the same model used by the strict encoder.
+            </p>
+            <ul class="feature-list">
+              <li><span>✓</span> Fee payer forced to first writable signer</li>
+              <li><span>✓</span> Duplicate account privileges merged</li>
+              <li><span>✓</span> Program and account indices compiled</li>
+              <li><span>✓</span> Signature count checked before encoding</li>
+            </ul>
+            <a
+              class="text-link"
+              href="https://github.com/atimics/solc/blob/main/include/solc/builder.h"
+            >Read the builder API <span aria-hidden="true">↗</span></a>
+          </div>
+
+          <div class="code-window reveal">
+            <div class="code-header">
+              <span>builder.c</span>
+              <button type="button" data-copy="builder-code">Copy</button>
+            </div>
+            <pre id="builder-code"><code><span class="token-comment">/* Caller owns storage, blockhash, and signatures. */</span>
+solc_transaction_instruction instruction = {
+    .program_id = system_program,
+    .accounts = transfer_accounts,
+    .account_count = 2u,
+    .data = {transfer_data, transfer_len},
+};
+
+solc_status status = solc_legacy_transaction_build(
+    fee_payer,
+    recent_blockhash,
+    signatures,
+    &amp;instruction,
+    1u,
+    &amp;scratch,
+    &amp;transaction,
+    &amp;error);
+
+<span class="token-comment">/* Size exactly, encode, then send bytes to a signer. */</span>
+solc_transaction_encode(
+    &amp;transaction, NULL, 0u, &amp;wire_len, &amp;error);</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="foundation" class="section shell">
+        <div class="section-heading reveal">
+          <p class="kicker">Why it is trustworthy</p>
+          <h2>Small enough to audit.<br>Strict enough to reject aliases.</h2>
+        </div>
+
+        <div class="principles-grid">
+          <article class="principle reveal">
+            <span class="principle-icon" aria-hidden="true">{ }</span>
+            <h3>No ambient authority</h3>
+            <p>
+              No network, clock, randomness, environment, dynamic allocation,
+              or mutable global state in the deterministic C core.
+            </p>
+          </article>
+          <article class="principle reveal">
+            <span class="principle-icon" aria-hidden="true">↔</span>
+            <h3>Byte-exact</h3>
+            <p>
+              Every accepted transaction decodes and re-encodes to the exact
+              same bytes. Non-canonical encodings fail closed.
+            </p>
+          </article>
+          <article class="principle reveal">
+            <span class="principle-icon" aria-hidden="true">≠</span>
+            <h3>Independently checked</h3>
+            <p>
+              Golden vectors, fuzzing, compiler-determinism checks, and pinned
+              official oracles expose local and upstream drift.
+            </p>
+          </article>
+          <article class="principle reveal">
+            <span class="principle-icon" aria-hidden="true">▦</span>
+            <h3>Portable boundary</h3>
+            <p>
+              The protocol truth lives behind a stable C ABI. Rust orchestrates
+              safe I/O and providers without duplicating the parser.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="roadmap" class="section roadmap-section">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <p class="kicker">Honest roadmap</p>
+            <h2>What works now.<br>What becomes the product next.</h2>
+          </div>
+
+          <div class="roadmap-grid">
+            <article class="roadmap-column available reveal">
+              <header>
+                <span class="roadmap-state">Available in the kernel</span>
+                <span class="roadmap-tag">today</span>
+              </header>
+              <ul>
+                <li>Checked legacy transaction builder</li>
+                <li>Legacy, v0, and v1 strict codecs</li>
+                <li>System, SPL Token, and Compute Budget codecs</li>
+                <li>Exact message-byte extraction</li>
+                <li>Strict Ed25519 verification provider boundary</li>
+                <li>C CLI inspection and round-trip orchestration</li>
+              </ul>
+            </article>
+
+            <article class="roadmap-column next reveal">
+              <header>
+                <span class="roadmap-state">Product surface</span>
+                <span class="roadmap-tag">next</span>
+              </header>
+              <ul>
+                <li>Versioned transaction-plan schema</li>
+                <li>Compile, attach-signature, and finalize commands</li>
+                <li>Safe Rust builder API over the C kernel</li>
+                <li>Signing bundle with ordered signer manifest</li>
+                <li>Offline v0 lookup-table compilation</li>
+                <li>Consumer-ready CMake and registry packages</li>
+              </ul>
+            </article>
+          </div>
+
+          <p class="roadmap-footnote reveal">
+            Network freshness, current account state, execution, and consensus
+            are separate claims. They will not be smuggled into an offline
+            compiler result.
+          </p>
+        </div>
+      </section>
+
+      <section id="packages" class="section shell package-section">
+        <div class="section-heading reveal">
+          <p class="kicker">Distribution strategy</p>
+          <h2>One kernel.<br>Native packages for each boundary.</h2>
+          <p>
+            Releases begin source-first. Language packages stay thin and carry
+            the same reviewed C implementation rather than translating protocol
+            rules independently.
+          </p>
+        </div>
+
+        <div class="package-grid">
+          <article class="package-card primary reveal">
+            <span class="package-label">Primary</span>
+            <h3>C / CMake</h3>
+            <p class="package-name">solc-wire core</p>
+            <p>
+              Versioned source archive, installable CMake config, pkg-config
+              metadata, checksums, and an immutable GitHub Release.
+            </p>
+          </article>
+          <article class="package-card reveal">
+            <span class="package-label">After API split</span>
+            <h3>Rust</h3>
+            <p class="package-name">sys · safe API · CLI</p>
+            <p>
+              Raw FFI and vendored core, a safe builder library, then a small
+              CLI package. Published only after package dry-runs are reproducible.
+            </p>
+          </article>
+          <article class="package-card reveal">
+            <span class="package-label">After MVP</span>
+            <h3>JavaScript</h3>
+            <p class="package-name">scoped WASM package</p>
+            <p>
+              A browser and Node wrapper over the same kernel—never a subprocess
+              adapter presented as a native transaction library.
+            </p>
+          </article>
+        </div>
+
+        <a
+          class="text-link package-link"
+          href="https://github.com/atimics/solc/blob/main/docs/PUBLISHING.md"
+        >Read the full publishing strategy <span aria-hidden="true">↗</span></a>
+      </section>
+
+      <section class="cta-section">
+        <div class="shell cta-inner reveal">
+          <div>
+            <p class="kicker">Build at the wire boundary</p>
+            <h2>The exact bytes should never be a surprise.</h2>
+          </div>
+          <div class="cta-actions">
+            <a
+              class="button button-light"
+              href="https://github.com/atimics/solc"
+            >Explore on GitHub <span aria-hidden="true">↗</span></a>
+            <a
+              class="button button-ghost"
+              href="https://github.com/atimics/solc/blob/main/ROADMAP.md"
+            >Read the roadmap</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <div>
+          <a class="brand footer-brand" href="#top">
+            <span class="brand-mark" aria-hidden="true">01</span>
+            <span>solc<span class="brand-slash">//</span>wire</span>
+          </a>
+          <p>Canonical Solana transactions from explicit inputs.</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/atimics/solc/blob/main/README.md">Docs</a>
+          <a href="https://github.com/atimics/solc/blob/main/PRD.md">Product</a>
+          <a href="https://github.com/atimics/solc/blob/main/ENG.md">Engineering</a>
+          <a href="https://github.com/atimics/solc/blob/main/LICENSE">Apache-2.0</a>
+        </div>
+        <p class="copyright">© <span data-year>2026</span> RATi Open Software Foundation</p>
+      </div>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
