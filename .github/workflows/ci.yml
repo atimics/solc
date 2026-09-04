@@ -46,9 +46,24 @@ jobs:
         run: |
           bash -n scripts/*.sh
           python3 -m py_compile scripts/*.py
+          python3 scripts/test-check-coverage.py
           git diff --check
       - name: Check GitHub Pages site
         run: python3 scripts/check-site.py site
+
+  coverage:
+    name: Deterministic core coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install matching Clang and LLVM coverage tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes clang-18 llvm-18
+          echo /usr/lib/llvm-18/bin >> "$GITHUB_PATH"
+      - name: Enforce line coverage floor
+        run: python3 scripts/check-coverage.py --minimum-lines 77
 
   native:
     name: C (${{ matrix.os }}, ${{ matrix.cc }})

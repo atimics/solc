@@ -30,16 +30,21 @@ def tool(name: str) -> str:
     direct = shutil.which(name)
     if direct:
         return direct
-    process = subprocess.run(
-        ["xcrun", "--find", name],
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
+    xcrun = shutil.which("xcrun") if sys.platform == "darwin" else None
+    if xcrun:
+        process = subprocess.run(
+            [xcrun, "--find", name],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        if process.returncode == 0 and process.stdout.strip():
+            return process.stdout.strip()
+    raise RuntimeError(
+        f"required coverage tool is unavailable: {name}; "
+        "install matching Clang and LLVM tools and add their bin directory to PATH"
     )
-    if process.returncode == 0:
-        return process.stdout.strip()
-    raise RuntimeError(f"required coverage tool is unavailable: {name}")
 
 
 def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
