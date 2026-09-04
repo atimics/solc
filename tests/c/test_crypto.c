@@ -175,11 +175,48 @@ static void test_message_bytes_and_provider(solc_message_version version) {
     CHECK(failed_signature == 0u);
 }
 
+static void test_verification_sanitizes_first(solc_message_version version) {
+    fixture value;
+    uint8_t extra_signatures[2u * SOLC_SIGNATURE_BYTES] = {0u};
+    uint8_t message_bytes[512];
+    size_t failed_signature;
+    solc_error error;
+    fake_context context = {NULL, 0u, 0u, 0};
+    solc_crypto_provider provider = {&context, solc_sha256_builtin, fake_verify};
+    size_t mutation;
+
+    for (mutation = 0u; mutation < 3u; ++mutation) {
+        solc_status expected = SOLC_E_SIGNATURE_MISMATCH;
+        make_fixture(&value, version);
+        if (mutation == 0u) {
+            value.transaction.signatures.len = 0u;
+        } else if (mutation == 1u) {
+            value.transaction.signatures = slice(extra_signatures, sizeof(extra_signatures));
+        } else {
+            value.transaction.message.static_account_keys.len = 0u;
+            expected = SOLC_E_INVALID_HEADER;
+        }
+        failed_signature = 0u;
+        CHECK(solc_transaction_verify_signatures(&value.transaction,
+                                                 &provider,
+                                                 message_bytes,
+                                                 sizeof(message_bytes),
+                                                 &failed_signature,
+                                                 &error) == expected);
+        CHECK(error.status == expected);
+        CHECK(failed_signature == SIZE_MAX);
+        CHECK(context.calls == 0u);
+    }
+}
+
 int main(void) {
     test_sha256();
     test_message_bytes_and_provider(SOLC_MESSAGE_LEGACY);
     test_message_bytes_and_provider(SOLC_MESSAGE_V0);
     test_message_bytes_and_provider(SOLC_MESSAGE_V1);
+    test_verification_sanitizes_first(SOLC_MESSAGE_LEGACY);
+    test_verification_sanitizes_first(SOLC_MESSAGE_V0);
+    test_verification_sanitizes_first(SOLC_MESSAGE_V1);
     if (failures != 0) {
         fprintf(stderr, "%d test assertion(s) failed\n", failures);
         return EXIT_FAILURE;

@@ -170,6 +170,10 @@ jobs:
           key: oracles-${{ runner.os }}-${{ hashFiles('tests/upstream-oracle/Cargo.lock', 'tests/program-oracle/Cargo.lock') }}
       - name: Verify canonical vectors with official transaction crates
         run: cargo run --locked --manifest-path tests/upstream-oracle/Cargo.toml
+      - name: Verify reviewed SDK wire source files
+        env:
+          SOLC_UPSTREAM_REF: 5ec913f7826c3c7ccbfc8adacc69605e90b3d6fa
+        run: scripts/check-upstream-drift.sh
       - name: Verify program vectors with official program crates
         run: cargo run --locked --manifest-path tests/program-oracle/Cargo.toml
       - name: Verify reviewed program source files
