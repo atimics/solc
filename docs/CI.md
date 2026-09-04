@@ -68,15 +68,20 @@ Every push and pull request runs independent jobs for:
 - AddressSanitizer and UndefinedBehaviorSanitizer;
 - GCC/Clang optimization-independent transcripts;
 - exact-pinned official transaction and program oracles;
+- a 77% deterministic-core line-coverage floor using matching Clang/LLVM 18 tools;
 - short fuzz campaigns for wire, encoding, SBF, and program decoders.
 
 Rust work no longer runs redundantly in every native compiler job. Workflow
 concurrency cancels superseded runs and exact-lockfile cache keys avoid stale
 oracle or orchestrator artifacts.
 
+Coverage also runs nightly. On Ubuntu, the coverage jobs install Clang and LLVM
+18 together and put their shared bin directory first on `PATH`. Local coverage
+uses tools on `PATH`, with Xcode discovery available on macOS. Use the same LLVM
+version for the compiler, profile merger, and coverage exporter.
+
 The scheduled workflow adds:
 
-- a 77% deterministic-core line-coverage floor;
 - GCC's interprocedural analyzer;
 - ThreadSanitizer;
 - five-minute campaigns for each fuzz target.
