@@ -5,7 +5,9 @@ edition = "2021"
 publish = false
 
 [dependencies]
-solana-transaction = { version = "=4.2.0", features = ["verify", "wincode"] }
+solana-message = { git = "https://github.com/anza-xyz/solana-sdk.git", rev = "5ec913f7826c3c7ccbfc8adacc69605e90b3d6fa" }
+solana-transaction = { git = "https://github.com/anza-xyz/solana-sdk.git", rev = "5ec913f7826c3c7ccbfc8adacc69605e90b3d6fa", features = ["verify", "wincode"] }
+solc-orchestrator = { path = "../../crates/solc-orchestrator" }
 wincode = { version = "=0.6.0", features = ["alloc"] }
 
 [workspace]
